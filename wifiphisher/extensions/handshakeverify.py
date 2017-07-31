@@ -310,16 +310,16 @@ class Handshakeverify(object):
 
         # handshake has been captured but verify fail
         if self._is_captured and self._is_done == FAIL:
-            ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str +
+            ret_info = ["PSK Captured - " + pw_str +
                         " NOT correct!"]
         # handshake has been captured and wait for victim to
         # type credentials
         elif self._is_captured and self._is_done == NOT_YET:
-            ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str +
-                        " Wait for presharedKey"]
+            ret_info = ["PSK Captured - " + pw_str +
+                        " Wait for credential"]
         # passphrase correct
         elif self._is_captured and self._is_done == DONE:
-            ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str +
+            ret_info = ["PSK Captured - " + pw_str +
                         " correct"]
         else:
             ret_info = ["WAIT for HANDSHAKE"]

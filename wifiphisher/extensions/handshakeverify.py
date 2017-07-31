@@ -17,6 +17,43 @@ import wifiphisher.common.extensions as extensions
 # define the verification state
 DONE, FAIL, NOT_YET = range(3)
 
+def is_valid_handshake_capture(handshake_path):
+    """
+    Check if valid handshake capture is found
+    :param handshake_path: file path of handshake
+    :type handshake_path: str
+    :return: None
+    :rtype: None
+    """
+    pkts = dot11.rdpcap(handshake_path)
+    eapols = []
+    # get all the KEY type EAPOLs
+    for pkt in pkts:
+        if pkt.haslayer(dot11.Dot11) and pkt.haslayer(dot11.EAPOL) and pkt[dot11.EAPOL].type == 3:
+            eapols.append(pkt)
+
+    num_of_frames = len(eapols)
+    for index in range(num_of_frames):
+        if num_of_frames - index > 3:
+            ap_bssid = eapols[index].addr2
+            # from AP to STA
+            msg1 = eapols[index]
+            # from STA to AP
+            msg2 = eapols[index + 1]
+            # from AP to STA
+            msg3 = eapols[index + 2]
+            # from STA to AP
+            msg4 = eapols[index + 3]
+
+            if msg1.addr2 == ap_bssid and\
+                    msg3.addr2 == ap_bssid and\
+                    msg2.addr1 == ap_bssid and\
+                    msg4.addr1 == ap_bssid:
+                return True
+        else:
+            break
+    return False
+
 
 class Handshakeverify(object):
     """
@@ -27,9 +64,9 @@ class Handshakeverify(object):
         """
         Setup the class with all the given arguments.
 
-        :param self: A Fourway object.
+        :param self: A Handshakeverify object.
         :param data: Shared data from main engine
-        :type self: Fourway
+        :type self: Handshakeverify
         :type data: dictionary
         :return: None
         :rtype: None
@@ -76,7 +113,7 @@ class Handshakeverify(object):
         Verify the passphrase given by users is corrected
         :param packet: A scapy.layers.RadioTap object
         :param passphrase: passphrase from phishinghttp
-        :type self: Fourway
+        :type self: Handshakeverify
         :type passphrase: str
         :return True if verifcation is done
         :rtype: bool
@@ -139,9 +176,9 @@ class Handshakeverify(object):
     def is_valid_handshake_frame(packet):
         """
         Check if the Dot11 packet is a valid EAPOL KEY frame
-        :param self: Fourway object
+        :param self: Handshakeverify object
         :param packet: A scapy.layers.RadioTap object
-        :type self: Fourway
+        :type self: Handshakeverify
         :type packet: scapy.layers.RadioTap
         :return True if this is an EAPOL KEY frame
         :rtype: bool
@@ -157,9 +194,9 @@ class Handshakeverify(object):
     def psk_verify(self, *list_data):
         """
         Backend method for verifing the the captured credentials
-        :param self: Fourway object
+        :param self: Handshakeverify object
         :param list_data: list data from phishinghttp
-        :type self: Fourway
+        :type self: Handshakeverify
         :type list_data: list
         :return 'success' if the password correct else return 'fail'
         :rtype: string
@@ -205,14 +242,15 @@ class Handshakeverify(object):
         # if captured the handshake but not done return fail
         if self._is_captured:
             return 'fail'
+        return 'not-captured'
 
     def get_packet(self, packet):
         """
         Process the Dot11 packets and verifiy it is a valid
         eapol frames in a 80211 fourway handshake
-        :param self: Fourway object
+        :param self: Handshakeverify object
         :param packet: A scapy.layers.RadioTap object
-        :type self: Fourway
+        :type self: Handshakeverify
         :type packet: scapy.layers.RadioTap
         :return: empty list
         :rtype: list
@@ -239,13 +277,13 @@ class Handshakeverify(object):
             if num_of_frames - index > 3:
                 ap_bssid = self._data.target_ap_bssid
                 # from AP to STA
-                msg1 = self._eapols[0]
+                msg1 = self._eapols[index]
                 # from STA to AP
-                msg2 = self._eapols[1]
+                msg2 = self._eapols[index + 1]
                 # from AP to STA
-                msg3 = self._eapols[2]
+                msg3 = self._eapols[index + 2]
                 # from STA to AP
-                msg4 = self._eapols[3]
+                msg4 = self._eapols[index + 3]
 
                 if msg1.addr2 == ap_bssid and\
                         msg3.addr2 == ap_bssid and\
@@ -260,8 +298,8 @@ class Handshakeverify(object):
     def send_output(self):
         """
         Send the output the extension manager
-        :param self: A Fourway object.
-        :type self: Fourway
+        :param self: A Handshakeverify object.
+        :type self: Handshakeverify
         :return: A list with the password checking information
         :rtype: list
         """
@@ -273,15 +311,16 @@ class Handshakeverify(object):
         # handshake has been captured but verify fail
         if self._is_captured and self._is_done == FAIL:
             ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str +
-                        " NOT CORRECT!"]
+                        " NOT correct!"]
         # handshake has been captured and wait for victim to
         # type credentials
         elif self._is_captured and self._is_done == NOT_YET:
-            ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str]
+            ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str +
+                        " Wait for presharedKey"]
         # passphrase correct
         elif self._is_captured and self._is_done == DONE:
             ret_info = ["WPA HANDSHAKE CAPTURED - " + pw_str +
-                        " CORRECT!"]
+                        " correct"]
         else:
             ret_info = ["WAIT for HANDSHAKE"]
         return ret_info
@@ -289,8 +328,8 @@ class Handshakeverify(object):
     def send_channels(self):
         """
         Send channels to subscribe
-        :param self: A Fourway object.
-        :type self: Fourway
+        :param self: A Handshakeverify object.
+        :type self: Handshakeverify
         :return: empty list
         :rtype: list
         ..note: we don't need to send frames in this extension

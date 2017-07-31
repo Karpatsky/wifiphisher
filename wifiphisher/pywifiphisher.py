@@ -24,6 +24,7 @@ import wifiphisher.common.interfaces as interfaces
 import wifiphisher.common.firewall as firewall
 import wifiphisher.common.accesspoint as accesspoint
 import wifiphisher.common.tui as tui
+import wifiphisher.extensions.handshakeverify as handshakeverify
 
 
 # Fixes UnicodeDecodeError for ESSIDs
@@ -149,6 +150,13 @@ def check_args(args):
                  '-' +
                  W +
                  '] handshake capture does not exist.')
+    elif args.handshake_capture and not handshakeverify.\
+            is_valid_handshake_capture(args.handshake_capture):
+        sys.exit('[' +
+                 R +
+                 '-' +
+                 W +
+                 '] handshake capture does not contain valid handshake')
 
     if ((args.jamminginterface and not args.apinterface) or
             (not args.jamminginterface and args.apinterface)) and \

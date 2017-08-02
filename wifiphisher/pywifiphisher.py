@@ -15,6 +15,7 @@ from threading import Thread
 from subprocess import Popen, PIPE, check_output
 from shutil import copyfile
 from wifiphisher.common.constants import *
+import pyric.pyw as pyw
 import wifiphisher.common.extensions as extensions
 import wifiphisher.common.recon as recon
 import wifiphisher.common.phishingpage as phishingpage
@@ -538,7 +539,8 @@ class WifiphisherEngine:
                 if self.network_manager.is_interface_valid(
                         args.internetinterface, "internet"):
                     internet_interface = args.internetinterface
-                    self.network_manager.unblock_interface(internet_interface)
+                    if pyw.iswireless(internet_interface):
+                        self.network_manager.unblock_interface(internet_interface)
             if not args.nojamming:
                 if args.jamminginterface and args.apinterface:
                     if self.network_manager.is_interface_valid(
